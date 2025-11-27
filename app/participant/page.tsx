@@ -97,16 +97,9 @@ export default function ParticipantPage() {
         </div>
 
         <div className="card mb-6">
-          <div className="mb-4">
-            <p className="text-sm text-gray-600">Benvenuto</p>
-            <p className="text-2xl font-bold text-gray-900">{participant.name}</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Stato:</span>
-            <span className={`badge ${isPending ? 'badge-pending' : 'badge-completed'}`}>
-              {isPending ? '⏳ In attesa' : '✅ Completato'}
-            </span>
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-2">Benvenuto</p>
+            <p className="text-3xl font-bold text-gray-900">{participant.name}</p>
           </div>
         </div>
 

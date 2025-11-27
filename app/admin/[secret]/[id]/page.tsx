@@ -257,7 +257,7 @@ export default function AdminDetailPage() {
               <span
                 className={`badge ${isPending ? 'badge-pending' : 'badge-completed'}`}
               >
-                {isPending ? '⏳ In attesa' : '✅ Completato'}
+                {isPending ? '⏳ Estrazione non ancora avvenuta' : '🎁 Estrazione completata'}
               </span>
             </p>
           </div>
@@ -366,11 +366,10 @@ export default function AdminDetailPage() {
                         {copiedCode === participant.access_code ? '✓ Copiato!' : '📋 Copia'}
                       </button>
                     </div>
-                    {!isPending && participant.assigned_to && (
-                      <p className="mt-2 text-sm text-gray-600">
-                        → Deve fare il regalo a:{' '}
-                        <span className="font-semibold">{participant.assigned_to.name}</span>
-                      </p>
+                    {!isPending && (
+                      <div className="mt-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded border border-gray-200">
+                        🎁 <span className="italic">Estrazione completata - il destinatario è visibile solo al partecipante</span>
+                      </div>
                     )}
                   </div>
 

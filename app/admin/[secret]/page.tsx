@@ -249,7 +249,7 @@ export default function AdminDashboard() {
                         ss.status === 'PENDING' ? 'badge-pending' : 'badge-completed'
                       }`}
                     >
-                      {ss.status === 'PENDING' ? '⏳ In attesa' : '✅ Completato'}
+                      {ss.status === 'PENDING' ? '⏳ Estrazione non ancora avvenuta' : '🎁 Estrazione completata'}
                     </span>
                     <p className="text-xs text-gray-500 mt-2">
                       {new Date(ss.created_at).toLocaleDateString('it-IT')}

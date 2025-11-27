@@ -8,16 +8,12 @@ Una web app per organizzare Secret Santa tra amici, colleghi o familiari. I part
 - Accesso tramite codice univoco human-readable (es: `NataleUfficio-12345678`)
 - Visualizzazione dello stato del Secret Santa (In attesa / Completato)
 - Scoperta del destinatario segreto quando l'estrazione è completata
-- Persistenza del login tramite localStorage (non serve reinserire il codice)
 
 ### Per l'Amministratore
 
-- Dashboard protetta da URL segreto
-- Creazione di nuovi Secret Santa con 2-20 partecipanti (**nome univoco globale**)
-- Gestione partecipanti: aggiungi, rimuovi, rigenera codici (singolo o tutti)
+- Creazione di nuovi Secret Santa con 2-20 partecipanti
+- Gestione partecipanti: aggiungi, rimuovi, rigenera codici di accesso
 - Completamento dell'estrazione con assegnazione casuale automatica
-- Visualizzazione di tutte le assegnazioni dopo il completamento
-- **Eliminazione completa** di un Secret Santa e tutti i suoi dati
 
 ## 🛠️ Stack Tecnologico
 
@@ -25,7 +21,6 @@ Una web app per organizzare Secret Santa tra amici, colleghi o familiari. I part
 - **Linguaggio**: TypeScript
 - **Database**: Supabase (PostgreSQL)
 - **Styling**: Tailwind CSS
-- **Hosting**: Azure Static Web Apps
 
 ## 📦 Setup Iniziale
 
