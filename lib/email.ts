@@ -5,11 +5,13 @@ const mailersend = process.env.MAILERSEND_API_KEY
   ? new MailerSend({ apiKey: process.env.MAILERSEND_API_KEY })
   : null;
 
-// Email sender configuration
-const defaultSender = new Sender(
-  process.env.MAILERSEND_FROM_EMAIL || 'noreply@secretsanta.app',
-  process.env.MAILERSEND_FROM_NAME || 'Secret Santa'
-);
+// Email sender configuration - lazy initialization to avoid errors when not configured
+function getDefaultSender(): Sender {
+  return new Sender(
+    process.env.MAILERSEND_FROM_EMAIL || 'noreply@secretsanta.app',
+    process.env.MAILERSEND_FROM_NAME || 'Secret Santa'
+  );
+}
 
 interface WelcomeEmailParams {
   participantName: string;
@@ -132,7 +134,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
     const recipients = [new Recipient(params.participantEmail, params.participantName)];
 
     const emailParams = new EmailParams()
-      .setFrom(defaultSender)
+      .setFrom(getDefaultSender())
       .setTo(recipients)
       .setSubject(`🎅 Sei stato invitato al Secret Santa "${params.secretSantaName}"!`)
       .setHtml(generateWelcomeEmailHtml(params))
