@@ -111,7 +111,7 @@ export default function ParticipantPage() {
                 Estrazione non ancora effettuata
               </h3>
               <p className="text-gray-600">
-                L'amministratore deve ancora completare l'assegnazione dei partecipanti.
+                L&apos;amministratore deve ancora completare l&apos;assegnazione dei partecipanti.
                 Torna più tardi per scoprire a chi dovrai fare il regalo!
               </p>
             </div>
