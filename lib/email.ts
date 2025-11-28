@@ -22,6 +22,18 @@ interface WelcomeEmailParams {
 }
 
 /**
+ * Escapes HTML special characters to prevent XSS in email templates
+ */
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Genera l'URL di accesso diretto per un partecipante
  */
 export function generateDirectAccessUrl(baseUrl: string, accessCode: string): string {
@@ -33,6 +45,9 @@ export function generateDirectAccessUrl(baseUrl: string, accessCode: string): st
  */
 function generateWelcomeEmailHtml(params: WelcomeEmailParams): string {
   const directLink = generateDirectAccessUrl(params.baseUrl, params.accessCode);
+  const safeParticipantName = escapeHtml(params.participantName);
+  const safeSecretSantaName = escapeHtml(params.secretSantaName);
+  const safeAccessCode = escapeHtml(params.accessCode);
   
   return `
 <!DOCTYPE html>
@@ -46,15 +61,15 @@ function generateWelcomeEmailHtml(params: WelcomeEmailParams): string {
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #c41e3a 0%, #1a472a 100%); padding: 40px 20px; text-align: center;">
       <h1 style="color: #ffffff; margin: 0; font-size: 32px;">🎅 Secret Santa</h1>
-      <p style="color: #ffffff; margin: 10px 0 0; opacity: 0.9;">${params.secretSantaName}</p>
+      <p style="color: #ffffff; margin: 10px 0 0; opacity: 0.9;">${safeSecretSantaName}</p>
     </div>
     
     <!-- Content -->
     <div style="padding: 40px 30px;">
-      <h2 style="color: #333333; margin-top: 0;">Ciao ${params.participantName}! 👋</h2>
+      <h2 style="color: #333333; margin-top: 0;">Ciao ${safeParticipantName}! 👋</h2>
       
       <p style="color: #555555; line-height: 1.6; font-size: 16px;">
-        Sei stato invitato a partecipare al Secret Santa <strong>${params.secretSantaName}</strong>!
+        Sei stato invitato a partecipare al Secret Santa <strong>${safeSecretSantaName}</strong>!
       </p>
       
       <p style="color: #555555; line-height: 1.6; font-size: 16px;">
@@ -65,7 +80,7 @@ function generateWelcomeEmailHtml(params: WelcomeEmailParams): string {
       <div style="background-color: #f8f9fa; border: 2px dashed #c41e3a; border-radius: 8px; padding: 20px; margin: 30px 0; text-align: center;">
         <p style="color: #666666; margin: 0 0 10px; font-size: 14px;">Il tuo codice di accesso:</p>
         <p style="font-family: monospace; font-size: 24px; color: #c41e3a; margin: 0; font-weight: bold; letter-spacing: 1px;">
-          ${params.accessCode}
+          ${safeAccessCode}
         </p>
       </div>
       
@@ -79,7 +94,7 @@ function generateWelcomeEmailHtml(params: WelcomeEmailParams): string {
       
       <p style="color: #888888; font-size: 14px; line-height: 1.6;">
         Se il pulsante non funziona, copia e incolla questo link nel tuo browser:<br>
-        <a href="${directLink}" style="color: #c41e3a; word-break: break-all;">${directLink}</a>
+        <a href="${directLink}" style="color: #c41e3a; word-break: break-all;">${escapeHtml(directLink)}</a>
       </p>
     </div>
     
