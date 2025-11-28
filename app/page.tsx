@@ -1,24 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function HomePage() {
+function HomePageContent() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  useEffect(() => {
-    // Controlla se c'è un codice salvato in localStorage
-    const savedCode = localStorage.getItem('participant_code');
-    if (savedCode) {
-      // Auto-login con il codice salvato
-      verifyCode(savedCode);
-    }
-  }, []);
-
-  const verifyCode = async (codeToVerify: string) => {
+  const verifyCode = useCallback(async (codeToVerify: string) => {
     setLoading(true);
     setError('');
 
@@ -42,15 +34,32 @@ export default function HomePage() {
 
       // Redirect alla pagina partecipante
       router.push('/participant');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Errore sconosciuto');
       // Rimuovi codice salvato se non valido
       localStorage.removeItem('participant_code');
       localStorage.removeItem('participant_data');
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    // Prima controlla se c'è un codice nel parametro URL (accesso diretto da email)
+    const urlCode = searchParams.get('code');
+    if (urlCode) {
+      setCode(urlCode);
+      verifyCode(urlCode);
+      return;
+    }
+
+    // Altrimenti controlla se c'è un codice salvato in localStorage
+    const savedCode = localStorage.getItem('participant_code');
+    if (savedCode) {
+      // Auto-login con il codice salvato
+      verifyCode(savedCode);
+    }
+  }, [searchParams, verifyCode]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +114,7 @@ export default function HomePage() {
         </div>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Non hai un codice? Contatta l'amministratore del tuo gruppo.</p>
+          <p>Non hai un codice? Contatta l&apos;amministratore del tuo gruppo.</p>
         </div>
 
         <div className="mt-8 text-center">
@@ -123,5 +132,20 @@ export default function HomePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin text-6xl mb-4">🎅</div>
+          <p className="text-gray-600">Caricamento...</p>
+        </div>
+      </div>
+    }>
+      <HomePageContent />
+    </Suspense>
   );
 }

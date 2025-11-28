@@ -7,6 +7,7 @@ import Link from 'next/link';
 interface Participant {
   id: string;
   name: string;
+  email?: string | null;
   access_code: string;
   has_accessed: boolean;
   assigned_to?: { name: string };
@@ -25,6 +26,7 @@ export default function AdminDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newParticipantName, setNewParticipantName] = useState('');
+  const [newParticipantEmail, setNewParticipantEmail] = useState('');
   const [error, setError] = useState('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const router = useRouter();
@@ -93,7 +95,10 @@ export default function AdminDetailPage() {
           'Content-Type': 'application/json',
           'x-admin-secret': adminSecret,
         },
-        body: JSON.stringify({ name: newParticipantName.trim() }),
+        body: JSON.stringify({ 
+          name: newParticipantName.trim(),
+          email: newParticipantEmail.trim() || undefined,
+        }),
       });
 
       if (!response.ok) {
@@ -102,10 +107,11 @@ export default function AdminDetailPage() {
       }
 
       setNewParticipantName('');
+      setNewParticipantEmail('');
       setShowAddForm(false);
       loadSecretSanta();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Errore sconosciuto');
     }
   };
 
@@ -302,6 +308,16 @@ export default function AdminDetailPage() {
                 placeholder="Nome partecipante"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-christmas-red focus:border-transparent"
               />
+              <input
+                type="email"
+                value={newParticipantEmail}
+                onChange={(e) => setNewParticipantEmail(e.target.value)}
+                placeholder="Email (opzionale)"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-christmas-red focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500">
+                Se inserisci l&apos;email, verrà inviato automaticamente il codice di accesso.
+              </p>
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                   {error}
@@ -315,6 +331,7 @@ export default function AdminDetailPage() {
                   type="button"
                   onClick={() => {
                     setShowAddForm(false);
+                    setNewParticipantEmail('');
                     setError('');
                   }}
                   className="btn btn-outline"
@@ -351,10 +368,13 @@ export default function AdminDetailPage() {
                       <h3 className="font-semibold text-lg">{participant.name}</h3>
                       {participant.has_accessed && (
                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                          ✓ Ha effettuato l'accesso
+                          ✓ Ha effettuato l&apos;accesso
                         </span>
                       )}
                     </div>
+                    {participant.email && (
+                      <p className="text-sm text-gray-500 mt-1">📧 {participant.email}</p>
+                    )}
                     <div className="mt-2 flex items-center gap-2">
                       <code className="bg-gray-100 px-3 py-1 rounded text-sm font-mono">
                         {participant.access_code}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/auth';
 import { generateParticipantCode, validateUniqueNames } from '@/lib/utils';
+import { sendWelcomeEmail } from '@/lib/email';
 
 export async function POST(
   request: NextRequest,
@@ -14,7 +15,7 @@ export async function POST(
   try {
     const { id } = params;
     const body = await request.json();
-    const { name } = body;
+    const { name, email } = body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
       return NextResponse.json(
@@ -53,7 +54,7 @@ export async function POST(
     }
 
     // Verifica unicità del nome
-    const existingNames = secretSanta.participants.map((p: any) => p.name);
+    const existingNames = secretSanta.participants.map((p: { name: string }) => p.name);
     if (!validateUniqueNames([...existingNames, name])) {
       return NextResponse.json(
         { error: 'Esiste già un partecipante con questo nome' },
@@ -67,6 +68,7 @@ export async function POST(
       .insert({
         secret_santa_id: id,
         name: name.trim(),
+        email: email?.trim() || null,
         access_code: generateParticipantCode(secretSanta.name),
         has_accessed: false,
       })
@@ -75,7 +77,26 @@ export async function POST(
 
     if (insertError) throw insertError;
 
-    return NextResponse.json(newParticipant, { status: 201 });
+    // Invia email di benvenuto se l'email è fornita
+    let emailSent = false;
+    if (newParticipant && email?.trim()) {
+      const host = request.headers.get('host') || 'localhost:3000';
+      const protocol = request.headers.get('x-forwarded-proto') || 'http';
+      const baseUrl = `${protocol}://${host}`;
+      
+      emailSent = await sendWelcomeEmail({
+        participantName: newParticipant.name,
+        participantEmail: email.trim(),
+        secretSantaName: secretSanta.name,
+        accessCode: newParticipant.access_code,
+        baseUrl,
+      });
+    }
+
+    return NextResponse.json({ 
+      ...newParticipant, 
+      emailSent 
+    }, { status: 201 });
 
   } catch (error) {
     console.error('Error adding participant:', error);

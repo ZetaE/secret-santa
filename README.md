@@ -52,6 +52,11 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ADMIN_SECRET_PATH=my-secret-admin-url-12345
+
+# MailerSend (opzionale, per invio email ai partecipanti)
+MAILERSEND_API_KEY=your-mailersend-api-key
+MAILERSEND_FROM_EMAIL=noreply@yourdomain.com
+MAILERSEND_FROM_NAME=Secret Santa
 ```
 
 **IMPORTANTE**: 
@@ -59,7 +64,26 @@ ADMIN_SECRET_PATH=my-secret-admin-url-12345
 - La dashboard admin sarà accessibile a `/admin/{ADMIN_SECRET_PATH}`
 - **NON condividere mai il `SUPABASE_SERVICE_ROLE_KEY`**
 
-### 5. Avvia il server di sviluppo
+### 5. Configura MailerSend (Opzionale)
+
+Se vuoi inviare automaticamente le email con i codici di accesso ai partecipanti:
+
+1. Crea un account su [MailerSend](https://www.mailersend.com/)
+2. Aggiungi e verifica il tuo dominio
+3. Genera una API Key dalla sezione "API Tokens"
+4. Configura le variabili d'ambiente:
+   - `MAILERSEND_API_KEY`: La tua API key di MailerSend
+   - `MAILERSEND_FROM_EMAIL`: L'email mittente (deve essere del dominio verificato)
+   - `MAILERSEND_FROM_NAME`: Il nome mittente (es: "Secret Santa")
+
+**Flusso Email:**
+- Quando crei un Secret Santa con le email dei partecipanti, viene inviata automaticamente un'email di benvenuto
+- L'email contiene: messaggio di benvenuto, codice di accesso e link diretto alla pagina partecipante
+- Il link diretto permette accesso con un solo click: `https://tuodominio.com?code=CODICE`
+
+**Nota:** Se MailerSend non è configurato, l'app funziona normalmente ma senza invio email.
+
+### 6. Avvia il server di sviluppo
 
 ```bash
 npm run dev
@@ -88,6 +112,9 @@ L'app sarà disponibile su [http://localhost:3000](http://localhost:3000)
      - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
      - `SUPABASE_SERVICE_ROLE_KEY`
      - `ADMIN_SECRET_PATH`
+     - `MAILERSEND_API_KEY` (opzionale)
+     - `MAILERSEND_FROM_EMAIL` (opzionale)
+     - `MAILERSEND_FROM_NAME` (opzionale)
    - Clicca "Deploy"
 
 3. **Verifica il deploy**
@@ -102,7 +129,7 @@ Via GitHub Actions:
 
 1. Crea una Azure Static Web App dalla Azure Portal
 2. Collega il repository GitHub
-3. Configura le variabili d'ambiente nella sezione "Configuration"
+3. Configura le variabili d'ambiente nella sezione "Configuration" (includi anche le variabili MailerSend se desideri l'invio email)
 4. Il deploy sarà automatico ad ogni push su `main`
 
 **Build Configuration:**
