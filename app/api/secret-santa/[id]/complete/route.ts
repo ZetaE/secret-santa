@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/auth';
 import { assignSecretSantas } from '@/lib/utils';
+import { sendCompletionEmailsToAll } from '@/lib/email';
 
 export async function POST(
   request: NextRequest,
@@ -65,9 +66,23 @@ export async function POST(
 
     if (updateError) throw updateError;
 
+    // Invia email di completamento a tutti i partecipanti con email
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                    request.headers.get('origin') || 
+                    'http://localhost:3000';
+    
+    const emailResults = await sendCompletionEmailsToAll(
+      participants,
+      secretSanta.name,
+      baseUrl
+    );
+
+    console.log(`[Email] Risultati invio email completamento: ${emailResults.sent} inviate, ${emailResults.failed} fallite, ${emailResults.skipped} saltate`);
+
     return NextResponse.json({ 
       message: 'Secret Santa completato con successo',
-      assignments: Object.fromEntries(assignments)
+      assignments: Object.fromEntries(assignments),
+      emailResults
     });
 
   } catch (error) {

@@ -29,6 +29,8 @@ export default function AdminDetailPage() {
   const [newParticipantEmail, setNewParticipantEmail] = useState('');
   const [error, setError] = useState('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
+  const [editingEmailValue, setEditingEmailValue] = useState('');
   const router = useRouter();
   const params = useParams();
   const adminSecret = params.secret as string;
@@ -199,6 +201,43 @@ export default function AdminDetailPage() {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const handleEditEmail = (participantId: string, currentEmail: string | null | undefined) => {
+    setEditingEmailId(participantId);
+    setEditingEmailValue(currentEmail || '');
+  };
+
+  const handleSaveEmail = async (participantId: string) => {
+    try {
+      const response = await fetch(
+        `/api/secret-santa/${id}/participant/${participantId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-secret': adminSecret,
+          },
+          body: JSON.stringify({ email: editingEmailValue }),
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error);
+      }
+
+      setEditingEmailId(null);
+      setEditingEmailValue('');
+      loadSecretSanta();
+    } catch (err: any) {
+      alert(`Errore: ${err.message}`);
+    }
+  };
+
+  const handleCancelEditEmail = () => {
+    setEditingEmailId(null);
+    setEditingEmailValue('');
   };
 
   const handleDeleteSecretSanta = async () => {
@@ -372,8 +411,63 @@ export default function AdminDetailPage() {
                         </span>
                       )}
                     </div>
-                    {participant.email && (
-                      <p className="text-sm text-gray-500 mt-1">📧 {participant.email}</p>
+                    {editingEmailId === participant.id ? (
+                      <div className="flex items-center gap-2 mt-2">
+                        <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <input
+                          type="email"
+                          value={editingEmailValue}
+                          onChange={(e) => setEditingEmailValue(e.target.value)}
+                          placeholder="email@example.com"
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-christmas-green focus:border-transparent"
+                        />
+                        <button
+                          onClick={() => handleSaveEmail(participant.id)}
+                          className="text-sm text-green-600 hover:text-green-800 px-2"
+                          title="Salva"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          onClick={handleCancelEditEmail}
+                          className="text-sm text-gray-600 hover:text-gray-800 px-2"
+                          title="Annulla"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        {participant.email ? (
+                          <div className="flex items-center gap-2 mt-1">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-sm text-gray-500">{participant.email}</p>
+                            {isPending && (
+                              <button
+                                onClick={() => handleEditEmail(participant.id, participant.email)}
+                                className="text-xs text-blue-600 hover:text-blue-800 ml-1"
+                                title="Modifica email"
+                              >
+                                ✏️
+                              </button>
+                            )}
+                          </div>
+                        ) : isPending ? (
+                          <button
+                            onClick={() => handleEditEmail(participant.id, null)}
+                            className="text-sm text-gray-500 hover:text-gray-700 mt-1 flex items-center gap-1"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-xs">Aggiungi email</span>
+                          </button>
+                        ) : null}
+                      </>
                     )}
                     <div className="mt-2 flex items-center gap-2">
                       <code className="bg-gray-100 px-3 py-1 rounded text-sm font-mono">
