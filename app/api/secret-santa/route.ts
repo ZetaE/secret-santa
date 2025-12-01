@@ -6,6 +6,7 @@ import {
   validateParticipantCount, 
   validateUniqueNames 
 } from '@/lib/utils';
+import { sendWelcomeEmailsToAll } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   // Verifica autenticazione admin
@@ -62,10 +63,11 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to create Secret Santa');
     }
 
-    // Crea partecipanti con codici
-    const participantsToInsert = participantNames.map((pName: string) => ({
+    // Crea partecipanti con codici e email opzionale
+    const participantsToInsert = participants.map((p: { name: string; email?: string }) => ({
       secret_santa_id: secretSanta.id,
-      name: pName,
+      name: p.name,
+      email: p.email || null,
       access_code: generateParticipantCode(name),
       has_accessed: false,
     }));
@@ -81,9 +83,18 @@ export async function POST(request: NextRequest) {
       throw participantsError;
     }
 
+    // Invia email di benvenuto ai partecipanti con email configurata
+    const baseUrl = getBaseUrl(request);
+    const emailResults = await sendWelcomeEmailsToAll(
+      createdParticipants || [],
+      name,
+      baseUrl
+    );
+
     return NextResponse.json({
       ...secretSanta,
       participants: createdParticipants,
+      emailResults,
     }, { status: 201 });
 
   } catch (error) {
@@ -93,6 +104,15 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Estrae la base URL dalla richiesta
+ */
+function getBaseUrl(request: NextRequest): string {
+  const host = request.headers.get('host') || 'localhost:3000';
+  const protocol = request.headers.get('x-forwarded-proto') || 'http';
+  return `${protocol}://${host}`;
 }
 
 export async function GET(request: NextRequest) {

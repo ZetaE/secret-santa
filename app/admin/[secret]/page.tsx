@@ -17,7 +17,10 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newName, setNewName] = useState('');
-  const [participants, setParticipants] = useState(['', '']);
+  const [participants, setParticipants] = useState<Array<{ name: string; email: string }>>([
+    { name: '', email: '' },
+    { name: '', email: '' },
+  ]);
   const [error, setError] = useState('');
   const router = useRouter();
   const params = useParams();
@@ -51,8 +54,11 @@ export default function AdminDashboard() {
     setError('');
 
     const validParticipants = participants
-      .map(p => p.trim())
-      .filter(p => p.length > 0);
+      .filter(p => p.name.trim().length > 0)
+      .map(p => ({
+        name: p.name.trim(),
+        email: p.email.trim() || undefined,
+      }));
 
     if (!newName.trim()) {
       setError('Il nome del Secret Santa è obbligatorio');
@@ -78,7 +84,7 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify({
           name: newName.trim(),
-          participants: validParticipants.map(name => ({ name })),
+          participants: validParticipants,
         }),
       });
 
@@ -91,20 +97,20 @@ export default function AdminDashboard() {
       
       // Reset form e ricarica lista
       setNewName('');
-      setParticipants(['', '']);
+      setParticipants([{ name: '', email: '' }, { name: '', email: '' }]);
       setShowCreateForm(false);
       loadSecretSantas();
 
       // Redirect al dettaglio
       router.push(`/admin/${adminSecret}/${newSecretSanta.id}`);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Errore sconosciuto');
     }
   };
 
   const addParticipantField = () => {
     if (participants.length < 20) {
-      setParticipants([...participants, '']);
+      setParticipants([...participants, { name: '', email: '' }]);
     }
   };
 
@@ -114,9 +120,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const updateParticipant = (index: number, value: string) => {
+  const updateParticipant = (index: number, field: 'name' | 'email', value: string) => {
     const updated = [...participants];
-    updated[index] = value;
+    updated[index] = { ...updated[index], [field]: value };
     setParticipants(updated);
   };
 
@@ -170,21 +176,33 @@ export default function AdminDashboard() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Partecipanti (min 2, max 20)
                 </label>
-                <div className="space-y-2">
+                <p className="text-xs text-gray-500 mb-3">
+                  L&apos;email è opzionale. Se inserita, verrà inviato automaticamente il codice di accesso.
+                </p>
+                <div className="space-y-3">
                   {participants.map((participant, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={participant}
-                        onChange={(e) => updateParticipant(index, e.target.value)}
-                        placeholder={`Partecipante ${index + 1}`}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-christmas-red focus:border-transparent"
-                      />
+                    <div key={index} className="flex gap-2 items-start">
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="text"
+                          value={participant.name}
+                          onChange={(e) => updateParticipant(index, 'name', e.target.value)}
+                          placeholder={`Nome partecipante ${index + 1}`}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-christmas-red focus:border-transparent"
+                        />
+                        <input
+                          type="email"
+                          value={participant.email}
+                          onChange={(e) => updateParticipant(index, 'email', e.target.value)}
+                          placeholder={`Email (opzionale)`}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-christmas-red focus:border-transparent text-sm"
+                        />
+                      </div>
                       {participants.length > 2 && (
                         <button
                           type="button"
                           onClick={() => removeParticipantField(index)}
-                          className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                          className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg mt-1"
                         >
                           ✕
                         </button>
@@ -196,7 +214,7 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={addParticipantField}
-                    className="mt-2 text-sm text-christmas-green hover:underline"
+                    className="mt-3 text-sm text-christmas-green hover:underline"
                   >
                     + Aggiungi partecipante
                   </button>
@@ -224,7 +242,7 @@ export default function AdminDashboard() {
                 Nessun Secret Santa creato ancora.
               </p>
               <p className="text-gray-500 mt-2">
-                Clicca su "Nuovo Secret Santa" per iniziare!
+                Clicca su &quot;Nuovo Secret Santa&quot; per iniziare!
               </p>
             </div>
           ) : (
