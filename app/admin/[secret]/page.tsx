@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -9,18 +9,23 @@ interface SecretSanta {
   name: string;
   status: 'PENDING' | 'COMPLETED';
   created_at: string;
-  participants: Array<{ id: string; name: string }>;
+  participants: Array<{ id: string; name: string; email?: string | null }>;
 }
+
+const emptyParticipants = () => [
+  { name: '', email: '' },
+  { name: '', email: '' },
+];
 
 export default function AdminDashboard() {
   const [secretSantas, setSecretSantas] = useState<SecretSanta[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newName, setNewName] = useState('');
-  const [participants, setParticipants] = useState<Array<{ name: string; email: string }>>([
-    { name: '', email: '' },
-    { name: '', email: '' },
-  ]);
+  const [participants, setParticipants] = useState<Array<{ name: string; email: string }>>(emptyParticipants);
+  // Nome del Secret Santa di origine quando si sta duplicando
+  const [duplicatedFrom, setDuplicatedFrom] = useState<string | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const router = useRouter();
   const params = useParams();
@@ -96,9 +101,7 @@ export default function AdminDashboard() {
       const newSecretSanta = await response.json();
       
       // Reset form e ricarica lista
-      setNewName('');
-      setParticipants([{ name: '', email: '' }, { name: '', email: '' }]);
-      setShowCreateForm(false);
+      closeForm();
       loadSecretSantas();
 
       // Redirect al dettaglio
@@ -107,6 +110,42 @@ export default function AdminDashboard() {
       setError(err instanceof Error ? err.message : 'Errore sconosciuto');
     }
   };
+
+  const resetForm = () => {
+    setNewName('');
+    setParticipants(emptyParticipants());
+    setDuplicatedFrom(null);
+    setError('');
+  };
+
+  const closeForm = () => {
+    resetForm();
+    setShowCreateForm(false);
+  };
+
+  // Precompila il form con i dati di un Secret Santa esistente.
+  // Nulla viene salvato finché l'admin non conferma la creazione.
+  const handleDuplicate = (source: SecretSanta) => {
+    const copied = source.participants.map(p => ({
+      name: p.name,
+      email: p.email ?? '',
+    }));
+
+    resetForm();
+    setNewName(`${source.name} (copia)`);
+    // Il form richiede almeno 2 righe
+    setParticipants([...copied, ...emptyParticipants()].slice(0, Math.max(copied.length, 2)));
+    setDuplicatedFrom(source.name);
+    setShowCreateForm(true);
+  };
+
+  // Quando si duplica, porta il form in vista e seleziona il nome da modificare
+  useEffect(() => {
+    if (duplicatedFrom === null) return;
+    nameInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    nameInputRef.current?.focus({ preventScroll: true });
+    nameInputRef.current?.select();
+  }, [duplicatedFrom]);
 
   const addParticipantField = () => {
     if (participants.length < 20) {
@@ -148,7 +187,7 @@ export default function AdminDashboard() {
             <p className="text-gray-600 mt-2">Gestisci i tuoi Secret Santa</p>
           </div>
           <button
-            onClick={() => setShowCreateForm(!showCreateForm)}
+            onClick={() => (showCreateForm ? closeForm() : setShowCreateForm(true))}
             className="btn btn-primary"
           >
             {showCreateForm ? 'Annulla' : '+ Nuovo Secret Santa'}
@@ -158,12 +197,19 @@ export default function AdminDashboard() {
         {showCreateForm && (
           <div className="card mb-8">
             <h2 className="text-2xl font-bold mb-4">Crea Nuovo Secret Santa</h2>
+            {duplicatedFrom !== null && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-4 text-sm">
+                Dati copiati da <strong>{duplicatedFrom}</strong>. Puoi modificarli prima di creare:
+                alla creazione i partecipanti con email riceveranno il nuovo codice di accesso.
+              </div>
+            )}
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nome del Secret Santa
                 </label>
                 <input
+                  ref={nameInputRef}
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
@@ -247,19 +293,31 @@ export default function AdminDashboard() {
             </div>
           ) : (
             secretSantas.map((ss) => (
-              <Link
+              <div
                 key={ss.id}
-                href={`/admin/${adminSecret}/${ss.id}`}
-                className="card block hover:shadow-lg transition-shadow"
+                className="card relative hover:shadow-lg transition-shadow"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900">
-                      {ss.name}
+                      {/* after:inset-0 rende cliccabile tutta la card */}
+                      <Link
+                        href={`/admin/${adminSecret}/${ss.id}`}
+                        className="after:absolute after:inset-0"
+                      >
+                        {ss.name}
+                      </Link>
                     </h3>
                     <p className="text-sm text-gray-600 mt-1">
                       {ss.participants.length} partecipanti
                     </p>
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicate(ss)}
+                      className="btn btn-outline relative z-10 mt-3 text-sm"
+                    >
+                      📋 Duplicate
+                    </button>
                   </div>
                   <div className="text-right">
                     <span
@@ -274,7 +332,7 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))
           )}
         </div>
